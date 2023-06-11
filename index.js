@@ -32,6 +32,7 @@ async function run() {
     const database = client.db("sclsDB");
     const usersCollection = database.collection("users");
     const classesCollection = database.collection("classes");
+    const instructorsCollection = database.collection("instructors");
 
     /**
      * User Router
@@ -58,6 +59,14 @@ async function run() {
      */
     app.get("/classes", async (req, res) => {
       const result = await classesCollection.find().toArray();
+      res.send(result);
+    });
+
+    /**
+     * Instructors Router
+     */
+    app.get("/instructors", async (req, res) => {
+      const result = await instructorsCollection.find().toArray();
       res.send(result);
     });
 
