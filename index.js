@@ -31,6 +31,7 @@ async function run() {
 
     const database = client.db("sclsDB");
     const usersCollection = database.collection("users");
+    const classesCollection = database.collection("classes");
 
     /**
      * User Router
@@ -49,7 +50,16 @@ async function run() {
     });
     /**
      * User Router End
+     *
      */
+
+    /**
+     * CLasses Router
+     */
+    app.get("/classes", async (req, res) => {
+      const result = await classesCollection.find().toArray();
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
