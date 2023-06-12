@@ -56,6 +56,22 @@ async function run() {
       const result = await usersCollection.insertOne(user);
       res.send(result);
     });
+
+    // * Update user role
+    app.patch("/users/:id", async (req, res) => {
+      const userID = req.params.id;
+      const updateInfo = req.body;
+
+      const query = { _id: new ObjectId(userID) };
+      const updateDoc = {
+        $set: {
+          role: updateInfo.role,
+        },
+      };
+      const result = await usersCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+
     /**
      * * User Router End
      */
