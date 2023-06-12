@@ -69,6 +69,21 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/classes/update/:id", async (req, res) => {
+      const courseID = req.params.id;
+      const updateCourse = req.body;
+      
+      const filter = { _id: new ObjectId(courseID) };
+      const updateDoc = {
+        $set: {
+          availableSeats: updateCourse.availableSeats,
+          enrolledStudents: updateCourse.enrolledStudents,
+        },
+      };
+      const result = await classesCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
     /**
      * Instructors Router
      */
@@ -80,6 +95,17 @@ async function run() {
     /**
      * Cart Router
      */
+
+    // * Get all carts data
+    app.get("/carts", async (req, res) => {
+      const email = req.query.email;
+      if (!email) {
+        res.send([]);
+      }
+      const query = { email: email };
+      const result = await cartCollection.find(query).toArray();
+      res.send(result);
+    });
 
     // * Insert enrolled course into DB
     app.post("/carts", async (req, res) => {
