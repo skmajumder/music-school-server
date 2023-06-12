@@ -33,6 +33,7 @@ async function run() {
     const usersCollection = database.collection("users");
     const classesCollection = database.collection("classes");
     const instructorsCollection = database.collection("instructors");
+    const cartCollection = database.collection("carts");
 
     /**
      * User Router
@@ -61,7 +62,7 @@ async function run() {
      */
 
     /**
-     * CLasses Router
+     * Course Router
      */
     app.get("/classes", async (req, res) => {
       const result = await classesCollection.find().toArray();
@@ -73,6 +74,17 @@ async function run() {
      */
     app.get("/instructors", async (req, res) => {
       const result = await instructorsCollection.find().toArray();
+      res.send(result);
+    });
+
+    /**
+     * Cart Router
+     */
+
+    // * Insert enrolled course into DB
+    app.post("/carts", async (req, res) => {
+      const course = req.body;
+      const result = await cartCollection.insertOne(course);
       res.send(result);
     });
 
