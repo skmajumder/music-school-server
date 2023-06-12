@@ -38,6 +38,12 @@ async function run() {
      * User Router
      */
 
+    // * Get all user from DB
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
     // * Insert User info into database
     app.post("/users", async (req, res) => {
       const user = req.body;
