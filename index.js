@@ -69,10 +69,11 @@ async function run() {
       res.send(result);
     });
 
+    // * Update Class Information
     app.patch("/classes/update/:id", async (req, res) => {
       const courseID = req.params.id;
       const updateCourse = req.body;
-      
+
       const filter = { _id: new ObjectId(courseID) };
       const updateDoc = {
         $set: {
