@@ -36,7 +36,7 @@ async function run() {
     const cartCollection = database.collection("carts");
 
     /**
-     * User Router
+     * * User Router
      */
 
     // * Get all user from DB
@@ -57,12 +57,11 @@ async function run() {
       res.send(result);
     });
     /**
-     * User Router End
-     *
+     * * User Router End
      */
 
     /**
-     * Course Router
+     * * Course Router
      */
     app.get("/classes", async (req, res) => {
       const result = await classesCollection.find().toArray();
@@ -86,7 +85,7 @@ async function run() {
     });
 
     /**
-     * Instructors Router
+     * * Instructors Router
      */
     app.get("/instructors", async (req, res) => {
       const result = await instructorsCollection.find().toArray();
@@ -94,7 +93,7 @@ async function run() {
     });
 
     /**
-     * Cart Router
+     * * Cart Router
      */
 
     // * Get all carts data
@@ -112,6 +111,18 @@ async function run() {
     app.post("/carts", async (req, res) => {
       const course = req.body;
       const result = await cartCollection.insertOne(course);
+      res.send(result);
+    });
+
+    // * Delete Course from cart
+    app.delete("/carts/:id", async (req, res) => {
+      const courseID = req.params.id;
+      const email = req.query.email;
+      if (!email) {
+        res.send([]);
+      }
+      const query = { _id: new ObjectId(courseID), email: email };
+      const result = await cartCollection.deleteOne(query);
       res.send(result);
     });
 
