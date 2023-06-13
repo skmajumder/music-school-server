@@ -123,6 +123,7 @@ async function run() {
       res.send(result);
     });
 
+    // * Update class status
     app.patch("/classes/status/:id", verifyJWT, async (req, res) => {
       const courseID = req.params.id;
       const updateInfo = req.body;
