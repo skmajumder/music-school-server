@@ -10,7 +10,6 @@ const port = process.env.PORT || 3000;
 // * JWT Middleware - Verify the jwt token, is it valid or not
 const verifyJWT = (req, res, next) => {
   const authorization = req.headers.authorization;
-  console.log(authorization);
   // * authorization header is not exist
   if (!authorization) {
     return res.status(401).send({
@@ -80,7 +79,7 @@ async function run() {
      */
 
     // * Get all user from DB
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyJWT, async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
@@ -119,21 +118,18 @@ async function run() {
     /**
      * * Course Router
      */
-    app.get("/classes", async (req, res) => {
+    app.get("/classes", verifyJWT, async (req, res) => {
       const result = await classesCollection.find().toArray();
       res.send(result);
     });
 
-    // * Update Class Information
-    app.patch("/classes/update/:id", async (req, res) => {
+    app.patch("/classes/status/:id", verifyJWT, async (req, res) => {
       const courseID = req.params.id;
-      const updateCourse = req.body;
-
-      const filter = { _id: new ObjectId(courseID) };
+      const updateInfo = req.body;
+      const filter = { _id: courseID };
       const updateDoc = {
         $set: {
-          availableSeats: updateCourse.availableSeats,
-          enrolledStudents: updateCourse.enrolledStudents,
+          status: updateInfo.status,
         },
       };
       const result = await classesCollection.updateOne(filter, updateDoc);
@@ -143,7 +139,7 @@ async function run() {
     /**
      * * Instructors Router
      */
-    app.get("/instructors", async (req, res) => {
+    app.get("/instructors", verifyJWT, async (req, res) => {
       const result = await instructorsCollection.find().toArray();
       res.send(result);
     });
