@@ -7,6 +7,34 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 3000;
 
+// * JWT Middleware - Verify the jwt token, is it valid or not
+const verifyJWT = (req, res, next) => {
+  const authorization = req.headers.authorization;
+  console.log(authorization);
+  // * authorization header is not exist
+  if (!authorization) {
+    return res.status(401).send({
+      error: true,
+      status: 401,
+      message: "Unauthorized Access: Authorization header not exist",
+    });
+  }
+  // * authorization header exist, and have the token; which is generated when user login
+  const token = authorization.split(" ")[1];
+  // * after get authorization token from client, now we need to verify that is it valid or not
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({
+        error: true,
+        status: 401,
+        message: "Unauthorized Access: Invalid token",
+      });
+    }
+    req.decoded = decoded;
+    next();
+  });
+};
+
 const corsConfig = {
   origin: "*",
   credentials: true,
@@ -125,11 +153,25 @@ async function run() {
      */
 
     // * Get all carts data
-    app.get("/carts", async (req, res) => {
+    app.get("/carts", verifyJWT, async (req, res) => {
       const email = req.query.email;
       if (!email) {
         res.send([]);
       }
+
+      /**
+       * *  Get user token, and check the token is valid for the current user, and the token is not for anyone else
+       */
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.status(403).send({
+          error: true,
+          status: 403,
+          message:
+            "Forbidden Access: Token is not valid for the user, refuses to authorize",
+        });
+      }
+
       const query = { email: email };
       const result = await cartCollection.find(query).toArray();
       res.send(result);
