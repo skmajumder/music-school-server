@@ -448,9 +448,24 @@ async function run() {
         }
       );
 
-      
-
       if (result.modifiedCount > 0) {
+        const course = await ordersCollection.findOne({ tranId: tranId });
+        const classOne = await classesCollection.findOne({
+          _id: new ObjectId(course.courseID),
+        });
+
+        const courseFilter = { _id: new ObjectId(course.courseID) };
+        const courseUpdateDoc = {
+          $set: {
+            availableSeats: classOne.availableSeats - 1,
+            enrolledStudents: classOne.enrolledStudents + 1,
+          },
+        };
+        const courseUpdate = await classesCollection.updateOne(
+          courseFilter,
+          courseUpdateDoc
+        );
+
         res.redirect(
           "https://summer-camp-school-891c4.web.app/dashboard/payment-success"
         );
