@@ -75,12 +75,112 @@ async function run() {
     });
 
     /**
+     * ! always use verifyJWT before verifyAdmin
+     * * Verify Admin
+     */
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== "admin") {
+        return res.status(403).send({
+          error: true,
+          status: 403,
+          admin: false,
+          message: "Forbidden Access: User is not Admin, refuses to authorize",
+        });
+      }
+      next();
+    };
+
+    /**
+     * ! always use verifyJWT before verifyInstructor
+     * * Verify Instructor
+     */
+    const verifyInstructor = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== "instructor") {
+        return res.status(403).send({
+          error: true,
+          status: 403,
+          instructor: false,
+          message: "Forbidden Access: User is not Admin, refuses to authorize",
+        });
+      }
+      next();
+    };
+
+    /**
      * * User Router
      */
 
     // * Get all user from DB
-    app.get("/users", verifyJWT, async (req, res) => {
+    app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
       const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
+    // * Get admin from DB
+    app.get("/users/admin/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      const decodedEmail = req.decoded.email;
+      if (decodedEmail !== email) {
+        return res.status(403).send({
+          error: true,
+          status: 403,
+          admin: false,
+          message: "Forbidden Access: User is not Admin, refuses to authorize",
+        });
+      }
+
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const result = { admin: user?.role === "admin" };
+      res.send(result);
+    });
+
+    // * Get instructor from DB
+    app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      const decodedEmail = req.decoded.email;
+      if (decodedEmail !== email) {
+        return res.status(403).send({
+          error: true,
+          status: 403,
+          instructor: false,
+          message:
+            "Forbidden Access: User is not Instructor, refuses to authorize",
+        });
+      }
+
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const result = { instructor: user?.role === "instructor" };
+      res.send(result);
+    });
+
+    // * Get student from DB
+    app.get("/users/student/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      const decodedEmail = req.decoded.email;
+      if (decodedEmail !== email) {
+        return res.status(403).send({
+          error: true,
+          status: 403,
+          student: false,
+          message:
+            "Forbidden Access: User is not student, refuses to authorize",
+        });
+      }
+
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const result = { student: user?.role === "student" };
       res.send(result);
     });
 
@@ -118,8 +218,32 @@ async function run() {
     /**
      * * Course Router
      */
-    app.get("/classes", verifyJWT, async (req, res) => {
+    app.get("/classes", async (req, res) => {
       const result = await classesCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/classes/:id", async (req, res) => {
+      const courseID = req.params.id;
+      const query = { _id: new ObjectId(courseID) };
+      const result = await classesCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.post("/classes", verifyJWT, verifyInstructor, async (req, res) => {
+      const newCourse = req.body;
+      const email = newCourse.instructorEmail;
+      // * Verifying the email
+      const decodedEmail = req.decoded.email;
+      if (decodedEmail !== email) {
+        return res.status(403).send({
+          error: true,
+          status: 403,
+          message:
+            "Forbidden Access: Token is not valid for the user, refuses to authorize",
+        });
+      }
+      const result = await classesCollection.insertOne(newCourse);
       res.send(result);
     });
 
@@ -127,7 +251,7 @@ async function run() {
     app.patch("/classes/status/:id", verifyJWT, async (req, res) => {
       const courseID = req.params.id;
       const updateInfo = req.body;
-      const filter = { _id: courseID };
+      const filter = { _id: new ObjectId(courseID) };
       const updateDoc = {
         $set: {
           status: updateInfo.status,
@@ -140,7 +264,7 @@ async function run() {
     /**
      * * Instructors Router
      */
-    app.get("/instructors", verifyJWT, async (req, res) => {
+    app.get("/instructors", async (req, res) => {
       const result = await instructorsCollection.find().toArray();
       res.send(result);
     });
