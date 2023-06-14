@@ -395,9 +395,9 @@ async function run() {
         total_amount: orderInfo.price,
         currency: "BDT",
         tran_id: tran_id, // use unique tran_id for each api call
-        success_url: `http://localhost:3000/payment/success/${tran_id}`,
-        fail_url: `http://localhost:3000/payment/failed/${tran_id}`,
-        cancel_url: `http://localhost:3000/payment/failed/${tran_id}`,
+        success_url: `https://b7a12-summer-camp-server-side-skmajumder.vercel.app/payment/success/${tran_id}`,
+        fail_url: `https://b7a12-summer-camp-server-side-skmajumder.vercel.app/payment/failed/${tran_id}`,
+        cancel_url: `https://b7a12-summer-camp-server-side-skmajumder.vercel.app/payment/failed/${tran_id}`,
         ipn_url: "http://localhost:3030/ipn",
         shipping_method: "Courier",
         product_name: orderInfo.courseName,
@@ -448,8 +448,12 @@ async function run() {
         }
       );
 
+      
+
       if (result.modifiedCount > 0) {
-        res.redirect("http://localhost:5173/dashboard/payment-success");
+        res.redirect(
+          "https://summer-camp-school-891c4.web.app/dashboard/payment-success"
+        );
       }
     });
 
@@ -458,7 +462,9 @@ async function run() {
       const result = await ordersCollection.deleteOne({ tranId: tranId });
 
       if (result.deletedCount > 0) {
-        res.redirect("http://localhost:5173/dashboard/payment-failed");
+        res.redirect(
+          "https://summer-camp-school-891c4.web.app/dashboard/payment-failed"
+        );
       }
     });
 
