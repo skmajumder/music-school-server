@@ -305,6 +305,20 @@ async function run() {
       res.send(result);
     });
 
+    // * Update class Feedback
+    app.patch("/classes/feedback/:id", verifyJWT, async (req, res) => {
+      const courseID = req.params.id;
+      const courseUpdate = req.body;
+      const filter = { _id: new ObjectId(courseID) };
+      const updateDoc = {
+        $set: {
+          feedback: courseUpdate.feedback,
+        },
+      };
+      const result = await classesCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
     /**
      * * Instructors Router
      */
