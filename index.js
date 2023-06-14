@@ -3,6 +3,7 @@ var cors = require("cors");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const SSLCommerzPayment = require("sslcommerz-lts");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -53,6 +54,10 @@ const client = new MongoClient(uri, {
   },
 });
 
+const store_id = process.env.SSLCOMMERZ_STORE_ID;
+const store_passwd = process.env.SSLCOMMERZ_STORE_PASSWORD;
+const is_live = false;
+
 async function run() {
   try {
     // await client.connect();
@@ -62,6 +67,7 @@ async function run() {
     const classesCollection = database.collection("classes");
     const instructorsCollection = database.collection("instructors");
     const cartCollection = database.collection("carts");
+    const ordersCollection = database.collection("orders");
 
     /**
      * * JWT Authentication
@@ -372,6 +378,111 @@ async function run() {
       }
       const query = { _id: new ObjectId(courseID), email: email };
       const result = await cartCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    /**
+     * * Payment Route
+     */
+
+    const tran_id = new ObjectId().toString();
+
+    app.post("/order/:id", async (req, res) => {
+      const courseID = req.params.id;
+      const orderInfo = req.body;
+
+      const data = {
+        total_amount: orderInfo.price,
+        currency: "BDT",
+        tran_id: tran_id, // use unique tran_id for each api call
+        success_url: `http://localhost:3000/payment/success/${tran_id}`,
+        fail_url: `http://localhost:3000/payment/failed/${tran_id}`,
+        cancel_url: `http://localhost:3000/payment/failed/${tran_id}`,
+        ipn_url: "http://localhost:3030/ipn",
+        shipping_method: "Courier",
+        product_name: orderInfo.courseName,
+        product_category: "Music Class",
+        product_profile: "general",
+        cus_name: orderInfo.studentName,
+        cus_email: orderInfo.studentEmail,
+        cus_add1: "Dhaka",
+        cus_add2: "Dhaka",
+        cus_city: "Dhaka",
+        cus_state: "Dhaka",
+        cus_postcode: "1000",
+        cus_country: "Bangladesh",
+        cus_phone: "01711111111",
+        cus_fax: "01711111111",
+        ship_name: "Customer Name",
+        ship_add1: "Dhaka",
+        ship_add2: "Dhaka",
+        ship_city: "Dhaka",
+        ship_state: "Dhaka",
+        ship_postcode: 1000,
+        ship_country: "Bangladesh",
+      };
+
+      const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
+      sslcz.init(data).then((apiResponse) => {
+        let GatewayPageURL = apiResponse.GatewayPageURL;
+        res.send({ url: GatewayPageURL });
+        console.log("Redirecting to: ", GatewayPageURL);
+      });
+
+      const finalOrder = {
+        ...orderInfo,
+        paidStatus: false,
+        tranId: tran_id,
+      };
+      const result = await ordersCollection.insertOne(finalOrder);
+    });
+
+    app.post("/payment/success/:tranId", async (req, res) => {
+      const tranId = req.params.tranId;
+      const result = await ordersCollection.updateOne(
+        { tranId: tranId },
+        {
+          $set: {
+            paidStatus: true,
+          },
+        }
+      );
+
+      if (result.modifiedCount > 0) {
+        res.redirect("http://localhost:5173/dashboard/payment-success");
+      }
+    });
+
+    app.post("/payment/failed/:tranId", async (req, res) => {
+      const tranId = req.params.tranId;
+      const result = await ordersCollection.deleteOne({ tranId: tranId });
+
+      if (result.deletedCount > 0) {
+        res.redirect("http://localhost:5173/dashboard/payment-failed");
+      }
+    });
+
+    app.get("/orders", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      if (!email) {
+        res.send([]);
+      }
+
+      /**
+       * *  Get user token, and check the token is valid for the current user, and the token is not for anyone else
+       */
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.status(403).send({
+          error: true,
+          status: 403,
+          message:
+            "Forbidden Access: Token is not valid for the user, refuses to authorize",
+        });
+      }
+
+      const query = { studentEmail: email };
+      const result = await ordersCollection.find(query).toArray();
       res.send(result);
     });
 
