@@ -223,8 +223,19 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/classes/:id", async (req, res) => {
+    app.get("/classes/:id", verifyJWT, verifyInstructor, async (req, res) => {
       const courseID = req.params.id;
+      const email = req.query.email;
+      // * Verifying the email
+      const decodedEmail = req.decoded.email;
+      if (decodedEmail !== email) {
+        return res.status(403).send({
+          error: true,
+          status: 403,
+          message:
+            "Forbidden Access: Token is not valid for the user, refuses to authorize",
+        });
+      }
       const query = { _id: new ObjectId(courseID) };
       const result = await classesCollection.findOne(query);
       res.send(result);
@@ -246,6 +257,39 @@ async function run() {
       const result = await classesCollection.insertOne(newCourse);
       res.send(result);
     });
+
+    app.patch(
+      "/classes/update/:id",
+      verifyJWT,
+      verifyInstructor,
+      async (req, res) => {
+        const courseID = req.params.id;
+        const updateCourse = req.body;
+        const email = updateCourse.instructorEmail;
+        // * Verifying the email
+        const decodedEmail = req.decoded.email;
+        if (decodedEmail !== email) {
+          return res.status(403).send({
+            error: true,
+            status: 403,
+            message:
+              "Forbidden Access: Token is not valid for the user, refuses to authorize",
+          });
+        }
+        const filter = { _id: new ObjectId(courseID) };
+        const updateDoc = {
+          $set: {
+            className: updateCourse.className,
+            details: updateCourse.details,
+            availableSeats: updateCourse.availableSeats,
+            price: updateCourse.price,
+            startDate: updateCourse.startDate,
+          },
+        };
+        const result = await classesCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      }
+    );
 
     // * Update class status
     app.patch("/classes/status/:id", verifyJWT, async (req, res) => {
